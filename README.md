@@ -7,4 +7,4 @@ For get this working on windows with mingw:
 2. Add compiler flags:
   -Dsrandom=srand -Drandom=rand (mingw linker not resolving random func)
   
- With this modifications, asn1 code works great
+ With this modifications, asn1 code works

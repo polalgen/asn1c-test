@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "rectangle.h": "c",
+        "types.h": "c",
+        "s1ap-pdu.h": "c"
+    }
+}
