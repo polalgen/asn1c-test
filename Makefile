@@ -19,8 +19,4 @@ library:
 
 clean:
 	$(MAKE) -C asn1c clean
-	ifeq ($(OS),Windows_NT)
-		$(RM) $(TARGET).exe
-	else
-		$(RM) $(TARGET)
-	endif
+	$(RM) $(TARGET)

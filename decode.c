@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
 
     /* UPER decode the data if filename is given */
     if(argc < 2) {
-        fprintf(stderr, "Specify filename for UPER input\n");
+        fprintf(stderr, "Specify filename for APER input\n");
         exit(1);
     } else {
         // read file contents
