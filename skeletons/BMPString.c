@@ -18,7 +18,7 @@ asn_OCTET_STRING_specifics_t asn_SPC_BMPString_specs = {
 	offsetof(BMPString_t, _asn_ctx),
 	ASN_OSUBV_U16	/* 16-bits character */
 };
-static asn_per_constraints_t asn_DEF_BMPString_per_constraints = {
+static asn_per_constraints_t asn_DEF_BMPString_constraints = {
 	{ APC_CONSTRAINED, 16, 16, 0, 65535 },
 	{ APC_SEMI_CONSTRAINED, -1, -1, 0, 0 },
 	0, 0
@@ -26,63 +26,39 @@ static asn_per_constraints_t asn_DEF_BMPString_per_constraints = {
 asn_TYPE_operation_t asn_OP_BMPString = {
 	OCTET_STRING_free,          /* Implemented in terms of OCTET STRING */
 	BMPString_print,
-	OCTET_STRING_compare,
+	asn_generic_no_constraint,  /* No constraint by default */
 	OCTET_STRING_decode_ber,
 	OCTET_STRING_encode_der,
 	BMPString_decode_xer,		/* Convert from UTF-8 */
 	BMPString_encode_xer,		/* Convert to UTF-8 */
-#ifdef	ASN_DISABLE_OER_SUPPORT
+#ifdef ASN_DISABLE_PER_SUPPORT
 	0,
 	0,
-#else
-	OCTET_STRING_decode_oer,
-	OCTET_STRING_encode_oer,
-#endif  /* ASN_DISABLE_OER_SUPPORT */
-#ifdef	ASN_DISABLE_PER_SUPPORT
 	0,
 	0,
 #else
 	OCTET_STRING_decode_uper,
 	OCTET_STRING_encode_uper,
-#endif	/* ASN_DISABLE_PER_SUPPORT */
-	OCTET_STRING_random_fill,
+	OCTET_STRING_decode_aper,	/* Aligned PER decoder */
+	OCTET_STRING_encode_aper,	/* Aligned PER encoder */
+#endif /* ASN_DISABLE_PER_SUPPORT */
 	0	/* Use generic outmost tag fetcher */
 };
 asn_TYPE_descriptor_t asn_DEF_BMPString = {
 	"BMPString",
 	"BMPString",
 	&asn_OP_BMPString,
+	asn_generic_no_constraint,
 	asn_DEF_BMPString_tags,
 	sizeof(asn_DEF_BMPString_tags)
 	  / sizeof(asn_DEF_BMPString_tags[0]) - 1,
 	asn_DEF_BMPString_tags,
 	sizeof(asn_DEF_BMPString_tags)
 	  / sizeof(asn_DEF_BMPString_tags[0]),
-	{ 0, &asn_DEF_BMPString_per_constraints, BMPString_constraint },
+	&asn_DEF_BMPString_constraints,
 	0, 0,	/* No members */
 	&asn_SPC_BMPString_specs
 };
-
-int
-BMPString_constraint(const asn_TYPE_descriptor_t *td, const void *sptr,
-                     asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-    const BMPString_t *st = (const BMPString_t *)sptr;
-
-    if(st && st->buf) {
-        if(st->size & 1) {
-            ASN__CTFAIL(app_key, td, sptr,
-                        "%s: invalid size %" ASN_PRI_SIZE " not divisible by 2 (%s:%d)",
-                        td->name, st->size, __FILE__, __LINE__);
-            return -1;
-        }
-    } else {
-        ASN__CTFAIL(app_key, td, sptr, "%s: value not given (%s:%d)", td->name,
-                    __FILE__, __LINE__);
-        return -1;
-    }
-
-    return 0;
-}
 
 /*
  * BMPString specific contents printer.
@@ -126,10 +102,10 @@ BMPString__dump(const BMPString_t *st,
 }
 
 asn_dec_rval_t
-BMPString_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
-                     const asn_TYPE_descriptor_t *td, void **sptr,
-                     const char *opt_mname, const void *buf_ptr, size_t size) {
-    asn_dec_rval_t rc;
+BMPString_decode_xer(asn_codec_ctx_t *opt_codec_ctx,
+	asn_TYPE_descriptor_t *td, void **sptr,
+		const char *opt_mname, const void *buf_ptr, size_t size) {
+	asn_dec_rval_t rc;
 
 	rc = OCTET_STRING_decode_xer_utf8(opt_codec_ctx, td, sptr, opt_mname,
 		buf_ptr, size);
@@ -192,10 +168,10 @@ BMPString_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
 }
 
 asn_enc_rval_t
-BMPString_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
-                     int ilevel, enum xer_encoder_flags_e flags,
-                     asn_app_consume_bytes_f *cb, void *app_key) {
-    const BMPString_t *st = (const BMPString_t *)sptr;
+BMPString_encode_xer(asn_TYPE_descriptor_t *td, void *sptr,
+	int ilevel, enum xer_encoder_flags_e flags,
+		asn_app_consume_bytes_f *cb, void *app_key) {
+	const BMPString_t *st = (const BMPString_t *)sptr;
 	asn_enc_rval_t er;
 
 	(void)ilevel;
@@ -211,9 +187,9 @@ BMPString_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
 }
 
 int
-BMPString_print(const asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
-                asn_app_consume_bytes_f *cb, void *app_key) {
-    const BMPString_t *st = (const BMPString_t *)sptr;
+BMPString_print(asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
+		asn_app_consume_bytes_f *cb, void *app_key) {
+	const BMPString_t *st = (const BMPString_t *)sptr;
 
 	(void)td;	/* Unused argument */
 	(void)ilevel;	/* Unused argument */

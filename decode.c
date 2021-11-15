@@ -1,14 +1,14 @@
 #include <stdio.h>
-#include <InitiatingMessage.h>
+#include <S1AP-PDU.h>
 
 int main(int argc, char** argv) {
-    InitiatingMessage_t *pdu = 0; /* Type to encode */
+    S1AP_PDU_t *pdu = 0; /* Type to encode */
     asn_dec_rval_t dc; /* Decoder return value */
 
     char*  buffer = 0;    
     int    length = 0;
     /* Allocate the S1AP_PDU_t */
-    pdu = calloc(1, sizeof(InitiatingMessage_t)); /* not malloc! */
+    pdu = calloc(1, sizeof(S1AP_PDU_t)); /* not malloc! */
 
     if(!pdu) {
         perror("calloc() failed");
@@ -40,16 +40,14 @@ int main(int argc, char** argv) {
     }
 
     /* Decode buffer as S1AP_PDU_t*/
-    asn_codec_ctx_t ctx;
-    ctx.max_stack_size = 0;
     asn_dec_rval_t rval; /* Decoder return value */
-    rval = ber_decode(&ctx, &asn_DEF_InitiatingMessage, (void **)&pdu, buffer+1, length-1);
+    rval = aper_decode_complete(0, &asn_DEF_S1AP_PDU, (void **)&pdu, buffer, length);
     if(rval.code != RC_OK) {
         fprintf(stderr, "Broken S1AP_PDU encoding at byte %ld\n", (long)rval.consumed);
         exit(1);
     }
-    /* Print the decoded Rectangle type as XML */
-    xer_fprint(stdout, &asn_DEF_InitiatingMessage, pdu);
+    /* Print the decoded S1AP_PDU type as XML */
+    xer_fprint(stdout, &asn_DEF_S1AP_PDU, pdu);
     //dc = uper_decode(&S1AP_PDU_t, buffer, length, fp);
 
     

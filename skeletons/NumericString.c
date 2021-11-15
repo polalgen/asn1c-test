@@ -31,7 +31,7 @@ static int asn_DEF_NumericString_c2v(unsigned int code) {
 		return 0x20;
 	}
 }
-static asn_per_constraints_t asn_DEF_NumericString_per_constraints = {
+static asn_per_constraints_t asn_DEF_NumericString_constraints = {
 	{ APC_CONSTRAINED, 4, 4, 0x20, 0x39 },	/* Value */
 	{ APC_SEMI_CONSTRAINED, -1, -1, 0, 0 },	/* Size */
 	asn_DEF_NumericString_v2c,
@@ -40,47 +40,44 @@ static asn_per_constraints_t asn_DEF_NumericString_per_constraints = {
 asn_TYPE_operation_t asn_OP_NumericString = {
 	OCTET_STRING_free,
 	OCTET_STRING_print_utf8,   /* ASCII subset */
-	OCTET_STRING_compare,
+	NumericString_constraint,
 	OCTET_STRING_decode_ber,    /* Implemented in terms of OCTET STRING */
 	OCTET_STRING_encode_der,
 	OCTET_STRING_decode_xer_utf8,
 	OCTET_STRING_encode_xer_utf8,
-#ifdef	ASN_DISABLE_OER_SUPPORT
+#ifdef ASN_DISABLE_PER_SUPPORT
 	0,
 	0,
-#else
-	OCTET_STRING_decode_oer,
-	OCTET_STRING_encode_oer,
-#endif  /* ASN_DISABLE_OER_SUPPORT */
-#ifdef	ASN_DISABLE_PER_SUPPORT
 	0,
 	0,
 #else
 	OCTET_STRING_decode_uper,
 	OCTET_STRING_encode_uper,
-#endif	/* ASN_DISABLE_PER_SUPPORT */
-	OCTET_STRING_random_fill,
+	OCTET_STRING_decode_aper,
+	OCTET_STRING_encode_aper,
+#endif /* ASN_DISABLE_PER_SUPPORT */
 	0	/* Use generic outmost tag fetcher */
 };
 asn_TYPE_descriptor_t asn_DEF_NumericString = {
 	"NumericString",
 	"NumericString",
 	&asn_OP_NumericString,
+	NumericString_constraint,
 	asn_DEF_NumericString_tags,
 	sizeof(asn_DEF_NumericString_tags)
 	  / sizeof(asn_DEF_NumericString_tags[0]) - 1,
 	asn_DEF_NumericString_tags,
 	sizeof(asn_DEF_NumericString_tags)
 	  / sizeof(asn_DEF_NumericString_tags[0]),
-	{ 0, &asn_DEF_NumericString_per_constraints, NumericString_constraint },
+	&asn_DEF_NumericString_constraints,
 	0, 0,	/* No members */
 	0	/* No specifics */
 };
 
 int
-NumericString_constraint(const asn_TYPE_descriptor_t *td, const void *sptr,
-                         asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-    const NumericString_t *st = (const NumericString_t *)sptr;
+NumericString_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
+		asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	const NumericString_t *st = (const NumericString_t *)sptr;
 
 	if(st && st->buf) {
 		uint8_t *buf = st->buf;

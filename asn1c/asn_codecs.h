@@ -1,5 +1,6 @@
-/*
- * Copyright (c) 2003-2017 Lev Walkin <vlm@lionet.info>. All rights reserved.
+/*-
+ * Copyright (c) 2003, 2004, 2005 Lev Walkin <vlm@lionet.info>.
+ * All rights reserved.
  * Redistribution and modifications are permitted subject to BSD license.
  */
 #ifndef	ASN_CODECS_H
@@ -51,10 +52,10 @@ typedef struct asn_enc_rval_s {
 	 */
 
 	/* Type which cannot be encoded */
-	const struct asn_TYPE_descriptor_s *failed_type;
+	struct asn_TYPE_descriptor_s *failed_type;
 
 	/* Pointer to the structure of that type */
-	const void *structure_ptr;
+	void *structure_ptr;
 } asn_enc_rval_t;
 #define	ASN__ENCODE_FAILED do {					\
 	asn_enc_rval_t tmp_error;				\

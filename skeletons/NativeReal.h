@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2004-2017 Lev Walkin <vlm@lionet.info>. All rights reserved.
+ * Copyright (c) 2004 Lev Walkin <vlm@lionet.info>. All rights reserved.
  * Redistribution and modifications are permitted subject to BSD license.
  */
 /*
@@ -17,25 +17,19 @@
 extern "C" {
 #endif
 
-typedef struct asn_NativeReal_specifics_s {
-    unsigned float_size; /* sizeof(float) or sizeof(double) */
-} asn_NativeReal_specifics_t;
-
 extern asn_TYPE_descriptor_t asn_DEF_NativeReal;
 extern asn_TYPE_operation_t asn_OP_NativeReal;
 
 asn_struct_free_f  NativeReal_free;
 asn_struct_print_f NativeReal_print;
-asn_struct_compare_f NativeReal_compare;
 ber_type_decoder_f NativeReal_decode_ber;
 der_type_encoder_f NativeReal_encode_der;
-per_type_decoder_f NativeReal_decode_uper;
-per_type_encoder_f NativeReal_encode_uper;
-oer_type_decoder_f NativeReal_decode_oer;
-oer_type_encoder_f NativeReal_encode_oer;
 xer_type_decoder_f NativeReal_decode_xer;
 xer_type_encoder_f NativeReal_encode_xer;
-asn_random_fill_f  NativeReal_random_fill;
+per_type_decoder_f NativeReal_decode_uper;
+per_type_encoder_f NativeReal_encode_uper;
+per_type_decoder_f NativeReal_decode_aper;
+per_type_encoder_f NativeReal_encode_aper;
 
 #define NativeReal_constraint  asn_generic_no_constraint
 

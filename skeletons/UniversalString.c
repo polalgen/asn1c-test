@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2003-2017 Lev Walkin <vlm@lionet.info>. All rights reserved.
+ * Copyright (c) 2003, 2004 Lev Walkin <vlm@lionet.info>. All rights reserved.
  * Redistribution and modifications are permitted subject to BSD license.
  */
 #include <asn_internal.h>
@@ -18,72 +18,48 @@ asn_OCTET_STRING_specifics_t asn_SPC_UniversalString_specs = {
 	offsetof(UniversalString_t, _asn_ctx),
 	ASN_OSUBV_U32	/* 32-bits character */
 };
-static asn_per_constraints_t asn_DEF_UniversalString_per_constraints = {
+static asn_per_constraints_t asn_DEF_UniversalString_constraints = {
 	{ APC_CONSTRAINED, 32, 32, 0, 2147483647 },
 	{ APC_SEMI_CONSTRAINED, -1, -1, 0, 0 },
 	0, 0
 };
 asn_TYPE_operation_t asn_OP_UniversalString = {
 	OCTET_STRING_free,
-	UniversalString_print,      /* Convert into UTF8 and print */
-	OCTET_STRING_compare,
+	UniversalString_print,      /* Convert into UTF8 and print */	
+	asn_generic_no_constraint,
 	OCTET_STRING_decode_ber,
 	OCTET_STRING_encode_der,
 	UniversalString_decode_xer,	/* Convert from UTF-8 */
 	UniversalString_encode_xer,	/* Convert into UTF-8 */
-#ifdef	ASN_DISABLE_OER_SUPPORT
+#ifdef ASN_DISABLE_PER_SUPPORT
 	0,
 	0,
-#else
-	OCTET_STRING_decode_oer,
-	OCTET_STRING_encode_oer,
-#endif  /* ASN_DISABLE_OER_SUPPORT */
-#ifdef	ASN_DISABLE_PER_SUPPORT
 	0,
 	0,
 #else
 	OCTET_STRING_decode_uper,
 	OCTET_STRING_encode_uper,
-#endif	/* ASN_DISABLE_PER_SUPPORT */
-	OCTET_STRING_random_fill,
+	OCTET_STRING_decode_aper,
+	OCTET_STRING_encode_aper,
+#endif /* ASN_DISABLE_PER_SUPPORT */
 	0	/* Use generic outmost tag fetcher */
 };
 asn_TYPE_descriptor_t asn_DEF_UniversalString = {
 	"UniversalString",
 	"UniversalString",
 	&asn_OP_UniversalString,
+	asn_generic_no_constraint,
 	asn_DEF_UniversalString_tags,
 	sizeof(asn_DEF_UniversalString_tags)
 	  / sizeof(asn_DEF_UniversalString_tags[0]) - 1,
 	asn_DEF_UniversalString_tags,
 	sizeof(asn_DEF_UniversalString_tags)
 	  / sizeof(asn_DEF_UniversalString_tags[0]),
-	{ 0, &asn_DEF_UniversalString_per_constraints, UniversalString_constraint },
+	&asn_DEF_UniversalString_constraints,
 	0, 0,	/* No members */
 	&asn_SPC_UniversalString_specs
 };
 
-int
-UniversalString_constraint(const asn_TYPE_descriptor_t *td, const void *sptr,
-                           asn_app_constraint_failed_f *ctfailcb,
-                           void *app_key) {
-    const UniversalString_t *st = (const UniversalString_t *)sptr;
-
-    if(st && st->buf) {
-        if(st->size % 4) {
-            ASN__CTFAIL(app_key, td, sptr,
-                        "%s: invalid size %" ASN_PRI_SIZE " not divisible by 4 (%s:%d)",
-                        td->name, st->size, __FILE__, __LINE__);
-            return -1;
-        }
-    } else {
-        ASN__CTFAIL(app_key, td, sptr, "%s: value not given (%s:%d)", td->name,
-                    __FILE__, __LINE__);
-        return -1;
-    }
-
-    return 0;
-}
 
 static ssize_t
 UniversalString__dump(const UniversalString_t *st,
@@ -145,11 +121,10 @@ UniversalString__dump(const UniversalString_t *st,
 }
 
 asn_dec_rval_t
-UniversalString_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
-                           const asn_TYPE_descriptor_t *td, void **sptr,
-                           const char *opt_mname, const void *buf_ptr,
-                           size_t size) {
-    asn_dec_rval_t rc;
+UniversalString_decode_xer(asn_codec_ctx_t *opt_codec_ctx,
+	asn_TYPE_descriptor_t *td, void **sptr,
+		const char *opt_mname, const void *buf_ptr, size_t size) {
+	asn_dec_rval_t rc;
 
 	rc = OCTET_STRING_decode_xer_utf8(opt_codec_ctx, td, sptr, opt_mname,
 		buf_ptr, size);
@@ -203,10 +178,10 @@ UniversalString_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
 }
 
 asn_enc_rval_t
-UniversalString_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
-                           int ilevel, enum xer_encoder_flags_e flags,
-                           asn_app_consume_bytes_f *cb, void *app_key) {
-    const UniversalString_t *st = (const UniversalString_t *)sptr;
+UniversalString_encode_xer(asn_TYPE_descriptor_t *td, void *sptr,
+	int ilevel, enum xer_encoder_flags_e flags,
+		asn_app_consume_bytes_f *cb, void *app_key) {
+	const UniversalString_t *st = (const UniversalString_t *)sptr;
 	asn_enc_rval_t er;
 
 	(void)ilevel;
@@ -222,9 +197,9 @@ UniversalString_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
 }
 
 int
-UniversalString_print(const asn_TYPE_descriptor_t *td, const void *sptr,
-                      int ilevel, asn_app_consume_bytes_f *cb, void *app_key) {
-    const UniversalString_t *st = (const UniversalString_t *)sptr;
+UniversalString_print(asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
+	asn_app_consume_bytes_f *cb, void *app_key) {
+	const UniversalString_t *st = (const UniversalString_t *)sptr;
 
 	(void)td;	/* Unused argument */
 	(void)ilevel;	/* Unused argument */

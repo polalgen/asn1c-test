@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2003-2017 Lev Walkin <vlm@lionet.info>.
+/*-
+ * Copyright (c) 2003, 2004, 2005, 2006 Lev Walkin <vlm@lionet.info>.
  * All rights reserved.
  * Redistribution and modifications are permitted subject to BSD license.
  */
@@ -7,7 +7,7 @@
 #include <constr_SET.h>
 
 /* Check that all the mandatory members are present */
-static int _SET_is_populated(const asn_TYPE_descriptor_t *td, const void *st);
+static int _SET_is_populated(asn_TYPE_descriptor_t *td, void *st);
 
 /*
  * Number of bytes left for this structure.
@@ -94,14 +94,13 @@ _t2e_cmp(const void *ap, const void *bp) {
  * The decoder of the SET type.
  */
 asn_dec_rval_t
-SET_decode_ber(const asn_codec_ctx_t *opt_codec_ctx,
-               const asn_TYPE_descriptor_t *td, void **struct_ptr,
-               const void *ptr, size_t size, int tag_mode) {
-    /*
+SET_decode_ber(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
+	void **struct_ptr, const void *ptr, size_t size, int tag_mode) {
+	/*
 	 * Bring closer parts of structure description.
 	 */
-	const asn_SET_specifics_t *specs = (const asn_SET_specifics_t *)td->specifics;
-	const asn_TYPE_member_t *elements = td->elements;
+	asn_SET_specifics_t *specs = (asn_SET_specifics_t *)td->specifics;
+	asn_TYPE_member_t *elements = td->elements;
 
 	/*
 	 * Parts of the structure being constructed.
@@ -113,7 +112,7 @@ SET_decode_ber(const asn_codec_ctx_t *opt_codec_ctx,
 	asn_dec_rval_t rval;	/* Return code from subparsers */
 
 	ssize_t consumed_myself = 0;	/* Consumed bytes from ptr */
-	size_t edx;			/* SET element's index */
+	int edx;			/* SET element's index */
 
 	ASN_DEBUG("Decoding %s as SET", td->name);
 
@@ -235,7 +234,7 @@ SET_decode_ber(const asn_codec_ctx_t *opt_codec_ctx,
 			 */
 			edx = t2m->el_no;
 			ctx->step = (edx << 1) + 1;
-			ASN_DEBUG("Got tag %s (%s), edx %" ASN_PRI_SSIZE "",
+			ASN_DEBUG("Got tag %s (%s), edx %d",
 				ber_tlv_tag_string(tlv_tag), td->name, edx);
 		} else if(specs->extensible == 0) {
 			ASN_DEBUG("Unexpected tag %s "
@@ -273,7 +272,7 @@ SET_decode_ber(const asn_codec_ctx_t *opt_codec_ctx,
 		 * already decoded elements.
 		 */
 		if(ASN_SET_ISPRESENT2((char *)st + specs->pres_offset, edx)) {
-			ASN_DEBUG("SET %s: Duplicate element %s (%" ASN_PRI_SSIZE ")",
+			ASN_DEBUG("SET %s: Duplicate element %s (%d)",
 				td->name, elements[edx].name, edx);
 			RETURN(RC_FAIL);
 		}
@@ -310,7 +309,7 @@ SET_decode_ber(const asn_codec_ctx_t *opt_codec_ctx,
 				ADVANCE(rval.consumed);
 				RETURN(RC_WMORE);
 			}
-			/* Fall through */
+			/* Fail through */
 		case RC_FAIL: /* Fatal error */
 			RETURN(RC_FAIL);
 		} /* switch(rval) */
@@ -381,7 +380,6 @@ SET_decode_ber(const asn_codec_ctx_t *opt_codec_ctx,
 		}
 
 		ctx->phase = 5;
-        /* Fall through */
 	case 5:
 		/* Check that all mandatory elements are present. */
 		if(!_SET_is_populated(td, st))
@@ -394,9 +392,9 @@ SET_decode_ber(const asn_codec_ctx_t *opt_codec_ctx,
 }
 
 static int
-_SET_is_populated(const asn_TYPE_descriptor_t *td, const void *st) {
-    const asn_SET_specifics_t *specs = (const asn_SET_specifics_t *)td->specifics;
-	size_t edx;
+_SET_is_populated(asn_TYPE_descriptor_t *td, void *st) {
+	asn_SET_specifics_t *specs = (asn_SET_specifics_t *)td->specifics;
+	int edx;
 
 	/*
 	 * Check that all mandatory elements are present.
@@ -406,9 +404,8 @@ _SET_is_populated(const asn_TYPE_descriptor_t *td, const void *st) {
 		unsigned int midx, pres, must;
 
 		midx = edx/(8 * sizeof(specs->_mandatory_elements[0]));
-        pres = ((const unsigned int *)((const char *)st
-                                       + specs->pres_offset))[midx];
-        must = sys_ntohl(specs->_mandatory_elements[midx]);
+		pres = ((unsigned int *)((char *)st + specs->pres_offset))[midx];
+		must = sys_ntohl(specs->_mandatory_elements[midx]);
 
 		if((pres & must) == must) {
 			/*
@@ -435,25 +432,26 @@ _SET_is_populated(const asn_TYPE_descriptor_t *td, const void *st) {
  * The DER encoder of the SET type.
  */
 asn_enc_rval_t
-SET_encode_der(const asn_TYPE_descriptor_t *td, const void *sptr, int tag_mode,
-               ber_tlv_tag_t tag, asn_app_consume_bytes_f *cb, void *app_key) {
-    const asn_SET_specifics_t *specs = (const asn_SET_specifics_t *)td->specifics;
+SET_encode_der(asn_TYPE_descriptor_t *td,
+	void *sptr, int tag_mode, ber_tlv_tag_t tag,
+	asn_app_consume_bytes_f *cb, void *app_key) {
+	asn_SET_specifics_t *specs = (asn_SET_specifics_t *)td->specifics;
 	size_t computed_size = 0;
 	asn_enc_rval_t er;
 	int t2m_build_own = (specs->tag2el_count != td->elements_count);
 	const asn_TYPE_tag2member_t *t2m;
 	asn_TYPE_tag2member_t *t2m_build;
-	size_t t2m_count;
+	int t2m_count;
 	ssize_t ret;
-	size_t edx;
+	int edx;
 
 	/*
 	 * Use existing, or build our own tags map.
 	 */
 	if(t2m_build_own) {
-        t2m_build = (asn_TYPE_tag2member_t *)CALLOC(td->elements_count,
-                                                    sizeof(t2m_build[0]));
-        if(!t2m_build) ASN__ENCODE_FAILED;
+		t2m_build = (asn_TYPE_tag2member_t *)alloca(
+				td->elements_count * sizeof(t2m_build[0]));
+		if(!t2m_build) ASN__ENCODE_FAILED; /* There are such platforms */
 		t2m_count = 0;
 	} else {
 		t2m_build = NULL;
@@ -469,22 +467,18 @@ SET_encode_der(const asn_TYPE_descriptor_t *td, const void *sptr, int tag_mode,
 	for(edx = 0; edx < td->elements_count; edx++) {
 		asn_TYPE_member_t *elm = &td->elements[edx];
 		asn_enc_rval_t tmper;
-		const void *memb_ptr_dontuse; /* Pointer to the member */
-        const void *const *memb_ptr2; /* Pointer to that pointer */
+		void *memb_ptr;
 
-        /*
+		/*
 		 * Compute the length of the encoding of this member.
 		 */
 		if(elm->flags & ATF_POINTER) {
-            memb_ptr2 =
-                (const void *const *)((const char *)sptr + elm->memb_offset);
-            if(!*memb_ptr2) {
-				if(!elm->optional) {
+			memb_ptr = *(void **)((char *)sptr + elm->memb_offset);
+			if(!memb_ptr) {
+				if(!elm->optional)
 					/* Mandatory elements missing */
-					FREEMEM(t2m_build);
 					ASN__ENCODE_FAILED;
-				}
-				if(t2m_build) {
+				if(t2m_build_own) {
 					t2m_build[t2m_count].el_no = edx;
 					t2m_build[t2m_count].el_tag = 0;
 					t2m_count++;
@@ -492,22 +486,9 @@ SET_encode_der(const asn_TYPE_descriptor_t *td, const void *sptr, int tag_mode,
 				continue;
 			}
 		} else {
-            memb_ptr_dontuse =
-                (const void *)((const char *)sptr + elm->memb_offset);
-            memb_ptr2 = &memb_ptr_dontuse; /* Only use of memb_ptr_dontuse */
+			memb_ptr = (void *)((char *)sptr + elm->memb_offset);
 		}
-
-		/* Eliminate default values */
-        if(elm->default_value_cmp && elm->default_value_cmp(*memb_ptr2) == 0) {
-            if(t2m_build) {
-				t2m_build[t2m_count].el_no = edx;
-				t2m_build[t2m_count].el_tag = 0;
-				t2m_count++;
-			}
-			continue;
-		}
-
-		tmper = elm->type->op->der_encoder(elm->type, *memb_ptr2,
+		tmper = elm->type->op->der_encoder(elm->type, memb_ptr,
 			elm->tag_mode, elm->tag,
 			0, 0);
 		if(tmper.encoded == -1)
@@ -517,10 +498,10 @@ SET_encode_der(const asn_TYPE_descriptor_t *td, const void *sptr, int tag_mode,
 		/*
 		 * Remember the outmost tag of this member.
 		 */
-		if(t2m_build) {
+		if(t2m_build_own) {
 			t2m_build[t2m_count].el_no = edx;
 			t2m_build[t2m_count].el_tag = asn_TYPE_outmost_tag(
-				elm->type, *memb_ptr2, elm->tag_mode, elm->tag);
+				elm->type, memb_ptr, elm->tag_mode, elm->tag);
 			t2m_count++;
 		} else {
 			/*
@@ -532,7 +513,7 @@ SET_encode_der(const asn_TYPE_descriptor_t *td, const void *sptr, int tag_mode,
 	/*
 	 * Finalize order of the components.
 	 */
-	if(t2m_build) {
+	if(t2m_build_own) {
 		/*
 		 * Sort the underlying members according to their
 		 * canonical tags order. DER encoding mandates it.
@@ -552,16 +533,10 @@ SET_encode_der(const asn_TYPE_descriptor_t *td, const void *sptr, int tag_mode,
 	 * Encode the TLV for the sequence itself.
 	 */
 	ret = der_write_tags(td, computed_size, tag_mode, 1, tag, cb, app_key);
-	if(ret == -1) {
-		FREEMEM(t2m_build);
-		ASN__ENCODE_FAILED;
-	}
+	if(ret == -1) ASN__ENCODE_FAILED;
 	er.encoded = computed_size + ret;
 
-	if(!cb) {
-		FREEMEM(t2m_build);
-		ASN__ENCODED_OK(er);
-    }
+	if(!cb) ASN__ENCODED_OK(er);
 
 	/*
 	 * Encode all members.
@@ -569,29 +544,20 @@ SET_encode_der(const asn_TYPE_descriptor_t *td, const void *sptr, int tag_mode,
 	for(edx = 0; edx < td->elements_count; edx++) {
 		asn_TYPE_member_t *elm;
 		asn_enc_rval_t tmper;
+		void *memb_ptr;
 
-		const void *memb_ptr_dontuse;		/* Pointer to the member */
-        const void *const *memb_ptr2;       /* Pointer to that pointer */
-
-        /* Encode according to the tag order */
+		/* Encode according to the tag order */
 		elm = &td->elements[t2m[edx].el_no];
 
 		if(elm->flags & ATF_POINTER) {
-            memb_ptr2 =
-                (const void *const *)((const char *)sptr + elm->memb_offset);
-            if(!*memb_ptr2) continue;
+			memb_ptr = *(void **)((char *)sptr + elm->memb_offset);
+			if(!memb_ptr) continue;
 		} else {
-            memb_ptr_dontuse =
-                (const void *)((const char *)sptr + elm->memb_offset);
-            memb_ptr2 = &memb_ptr_dontuse; /* Only use of memb_ptr_dontuse */
+			memb_ptr = (void *)((char *)sptr + elm->memb_offset);
 		}
-
-		/* Eliminate default values */
-        if(elm->default_value_cmp && elm->default_value_cmp(*memb_ptr2) == 0)
-            continue;
-
-		tmper = elm->type->op->der_encoder(elm->type, *memb_ptr2,
-			elm->tag_mode, elm->tag, cb, app_key);
+		tmper = elm->type->op->der_encoder(elm->type, memb_ptr,
+			elm->tag_mode, elm->tag,
+			cb, app_key);
 		if(tmper.encoded == -1)
 			return tmper;
 		computed_size -= tmper.encoded;
@@ -601,13 +567,217 @@ SET_encode_der(const asn_TYPE_descriptor_t *td, const void *sptr, int tag_mode,
 		/*
 		 * Encoded size is not equal to the computed size.
 		 */
-		FREEMEM(t2m_build);
 		ASN__ENCODE_FAILED;
 	}
 
-    FREEMEM(t2m_build);
 	ASN__ENCODED_OK(er);
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+asn_enc_rval_t
+SET_encode_uper(asn_TYPE_descriptor_t *td,
+				asn_per_constraints_t *constraints,
+				void *sptr,
+				asn_per_outp_t *po) {
+	int useless_test = (constraints && po);
+	if (useless_test) {
+		useless_test = 0;
+	}
+	ASN__ENCODE_FAILED;
+}
+
+asn_dec_rval_t
+SET_decode_uper(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
+					 asn_per_constraints_t *constraints, void **sptr, asn_per_data_t *pd) {
+	int useless_test = (opt_codec_ctx && constraints && sptr && pd);
+	if (useless_test) {
+		useless_test = 0;
+	}
+	ASN__DECODE_FAILED;
+}
+#pragma GCC diagnostic pop
+
+asn_enc_rval_t
+SET_encode_aper(asn_TYPE_descriptor_t *td,
+				asn_per_constraints_t *constraints,
+				void *sptr,
+				asn_per_outp_t *po) {
+	asn_SET_specifics_t *specs = (asn_SET_specifics_t *)td->specifics;
+	asn_enc_rval_t er;
+	int edx;
+	int t2m_build_own = (specs->tag2el_count != td->elements_count);
+	const asn_TYPE_tag2member_t *t2m;
+	asn_TYPE_tag2member_t *t2m_build;
+	int t2m_count;
+
+	(void)constraints;
+
+	if(!sptr)
+		ASN__ENCODE_FAILED;
+
+	er.encoded = 0;
+
+	ASN_DEBUG("Encoding %s as SET (APER) map %d", td->name, specs->_mandatory_elements[0]);
+
+	/*
+	 * Use existing, or build our own tags map.
+	 */
+	if(t2m_build_own) {
+		t2m_build = (asn_TYPE_tag2member_t *)alloca(
+			td->elements_count * sizeof(t2m[0]));
+	if(!t2m_build) ASN__ENCODE_FAILED; /* There are such platforms */
+		t2m_count = 0;
+	} else {
+		t2m_build = NULL;
+		/*
+		 * There is no untagged CHOICE in this SET.
+		 * Employ existing table.
+		 */
+	}
+
+	/*
+	 * Gather the length of the underlying members sequence.
+	 */
+	for(edx = 0; edx < td->elements_count; edx++) {
+		asn_TYPE_member_t *elm = &td->elements[edx];
+		void *memb_ptr;
+
+		/*
+		 * Compute the length of the encoding of this member.
+		 */
+		if(elm->flags & ATF_POINTER) {
+			memb_ptr = *(void **)((char *)sptr + elm->memb_offset);
+			if(!memb_ptr) {
+				if(!elm->optional)
+				/* Mandatory elements missing */
+					ASN__ENCODE_FAILED;
+				if(t2m_build_own) {
+					t2m_build[t2m_count].el_no = edx;
+					t2m_build[t2m_count].el_tag = 0;
+					t2m_count++;
+				}
+				continue;
+			}
+		} else {
+			memb_ptr = (void *)((char *)sptr + elm->memb_offset);
+		}
+
+		/*
+		 * Remember the outmost tag of this member.
+		 */
+		if(t2m_build_own) {
+			t2m_build[t2m_count].el_no = edx;
+			t2m_build[t2m_count].el_tag = asn_TYPE_outmost_tag(
+				elm->type, memb_ptr, elm->tag_mode, elm->tag);
+			t2m_count++;
+		} else {
+			/*
+			 * No dynamic sorting is necessary.
+			 */
+		}
+	}
+
+	/*
+	 * Finalize order of the components.
+	 */
+	assert(t2m_count == td->elements_count);
+	if(t2m_build_own) {
+		/*
+		 * Sort the underlying members according to their
+		 * canonical tags order. DER encoding mandates it.
+		 */
+		qsort(t2m_build, t2m_count, sizeof(specs->tag2el[0]), _t2e_cmp);
+		t2m = t2m_build;
+	} else {
+		/*
+		 * Tags are already sorted by the compiler.
+		 */
+		t2m = specs->tag2el;
+		t2m_count = specs->tag2el_count;
+	}
+	assert(t2m_count == td->elements_count);
+
+	for(edx = 0; edx < td->elements_count; edx++) {
+		asn_TYPE_member_t *elm = &td->elements[t2m[edx].el_no];
+//		asn_enc_rval_t tmper;
+//		void *memb_ptr;		 /* Pointer to the member */
+		void **memb_ptr2;	   /* Pointer to that pointer */
+		int present;
+
+		/* Fetch the pointer to this member */
+		if(elm->flags & ATF_POINTER) {
+			memb_ptr2 = (void **)((char *)sptr + elm->memb_offset);
+			present = (*memb_ptr2 != 0);
+		} else {
+//			 memb_ptr = (void *)((char *)sptr + elm->memb_offset);
+//			 memb_ptr2 = &memb_ptr;
+			present = 1;
+			continue;
+		}
+
+//		 /* Eliminate default values */
+//		 if(present && elm->default_value
+//			 && elm->default_value(0, memb_ptr2) == 1)
+//			 present = 0;
+
+		ASN_DEBUG("Element %s %s %s->%s is %s",
+				  elm->flags & ATF_POINTER ? "ptr" : "inline",
+				  elm->default_value ? "def" : "wtv",
+				  td->name, elm->name, present ? "present" : "absent");
+		if(per_put_few_bits(po, present << 7, 8))
+			ASN__ENCODE_FAILED;
+	}
+
+	/*
+	 * Encode all members.
+	 */
+	for(edx = 0; edx < td->elements_count; edx++) {
+		asn_TYPE_member_t *elm = &td->elements[edx];
+		asn_enc_rval_t tmper;
+		void *memb_ptr;		 /* Pointer to the member */
+		void **memb_ptr2;	   /* Pointer to that pointer */
+
+		/* Encode according to the tag order */
+//		 elm = &td->elements[t2m[edx].el_no];
+
+		if(elm->flags & ATF_POINTER) {
+			memb_ptr2 = (void **)((char *)sptr + elm->memb_offset);
+			if(!*memb_ptr2) {
+				ASN_DEBUG("Element %s %d not present",
+						  elm->name, edx);
+				if(elm->optional)
+					continue;
+				/* Mandatory element is missing */
+				ASN__ENCODE_FAILED;
+			}
+		} else {
+			memb_ptr = (void *)((char *)sptr + elm->memb_offset);
+			memb_ptr2 = &memb_ptr;
+		}
+		tmper = elm->type->op->aper_encoder(elm->type, elm->per_constraints,
+										*memb_ptr2, po);
+		if(tmper.encoded == -1)
+			return tmper;
+	}
+
+	ASN__ENCODED_OK(er);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+asn_dec_rval_t
+SET_decode_aper(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
+		asn_per_constraints_t *constraints,
+		void **sptr, asn_per_data_t *pd)
+{
+	int useless_test = (opt_codec_ctx && constraints && sptr && pd);
+	if (useless_test) {
+		useless_test = 0;
+	}
+	ASN__DECODE_FAILED;
+}
+#pragma GCC diagnostic pop
 
 #undef	XER_ADVANCE
 #define	XER_ADVANCE(num_bytes)	do {			\
@@ -621,14 +791,14 @@ SET_encode_der(const asn_TYPE_descriptor_t *td, const void *sptr, int tag_mode,
  * Decode the XER (XML) data.
  */
 asn_dec_rval_t
-SET_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
-               const asn_TYPE_descriptor_t *td, void **struct_ptr,
-               const char *opt_mname, const void *buf_ptr, size_t size) {
-    /*
+SET_decode_xer(asn_codec_ctx_t *opt_codec_ctx, asn_TYPE_descriptor_t *td,
+	void **struct_ptr, const char *opt_mname,
+		const void *buf_ptr, size_t size) {
+	/*
 	 * Bring closer parts of structure description.
 	 */
-	const asn_SET_specifics_t *specs = (const asn_SET_specifics_t *)td->specifics;
-	const asn_TYPE_member_t *elements = td->elements;
+	asn_SET_specifics_t *specs = (asn_SET_specifics_t *)td->specifics;
+	asn_TYPE_member_t *elements = td->elements;
 	const char *xml_tag = opt_mname ? opt_mname : td->xml_tag;
 
 	/*
@@ -639,7 +809,7 @@ SET_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
 
 	asn_dec_rval_t rval;		/* Return value from a decoder */
 	ssize_t consumed_myself = 0;	/* Consumed bytes from ptr */
-	size_t edx;			/* Element index */
+	int edx;			/* Element index */
 
 	/*
 	 * Create the target structure if it is not present already.
@@ -666,19 +836,19 @@ SET_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
 		pxer_chunk_type_e ch_type;	/* XER chunk type */
 		ssize_t ch_size;		/* Chunk size */
 		xer_check_tag_e tcv;		/* Tag check value */
-		const asn_TYPE_member_t *elm;
+		asn_TYPE_member_t *elm;
 
 		/*
 		 * Go inside the inner member of a set.
 		 */
 		if(ctx->phase == 2) {
 			asn_dec_rval_t tmprval;
-			void *memb_ptr_dontuse; /* Pointer to the member */
+			void *memb_ptr;		/* Pointer to the member */
 			void **memb_ptr2;	/* Pointer to that pointer */
 
 			if(ASN_SET_ISPRESENT2((char *)st + specs->pres_offset,
 					edx)) {
-				ASN_DEBUG("SET %s: Duplicate element %s (%" ASN_PRI_SSIZE ")",
+				ASN_DEBUG("SET %s: Duplicate element %s (%d)",
 				td->name, elements[edx].name, edx);
 				RETURN(RC_FAIL);
 			}
@@ -689,8 +859,8 @@ SET_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
 				/* Member is a pointer to another structure */
 				memb_ptr2 = (void **)((char *)st + elm->memb_offset);
 			} else {
-				memb_ptr_dontuse = (char *)st + elm->memb_offset;
-				memb_ptr2 = &memb_ptr_dontuse; /* Only use of memb_ptr_dontuse */
+				memb_ptr = (char *)st + elm->memb_offset;
+				memb_ptr2 = &memb_ptr;
 			}
 
 			/* Invoke the inner type decoder, m.b. multiple times */
@@ -712,8 +882,8 @@ SET_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
 		ch_size = xer_next_token(&ctx->context,
 			buf_ptr, size, &ch_type);
 		if(ch_size == -1) {
-			RETURN(RC_FAIL);
-		} else {
+            RETURN(RC_FAIL);
+        } else {
 			switch(ch_type) {
             case PXER_WMORE:
                 RETURN(RC_WMORE);
@@ -837,15 +1007,15 @@ SET_decode_xer(const asn_codec_ctx_t *opt_codec_ctx,
 }
 
 asn_enc_rval_t
-SET_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
-               enum xer_encoder_flags_e flags, asn_app_consume_bytes_f *cb,
-               void *app_key) {
-    const asn_SET_specifics_t *specs = (const asn_SET_specifics_t *)td->specifics;
+SET_encode_xer(asn_TYPE_descriptor_t *td, void *sptr,
+	int ilevel, enum xer_encoder_flags_e flags,
+		asn_app_consume_bytes_f *cb, void *app_key) {
+	asn_SET_specifics_t *specs = (asn_SET_specifics_t *)td->specifics;
 	asn_enc_rval_t er;
 	int xcan = (flags & XER_F_CANONICAL);
 	const asn_TYPE_tag2member_t *t2m = specs->tag2el_cxer;
-	size_t t2m_count = specs->tag2el_cxer_count;
-	size_t edx;
+	int t2m_count = specs->tag2el_cxer_count;
+	int edx;
 
 	if(!sptr)
 		ASN__ENCODE_FAILED;
@@ -857,26 +1027,25 @@ SET_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
 	for(edx = 0; edx < t2m_count; edx++) {
 		asn_enc_rval_t tmper;
 		asn_TYPE_member_t *elm;
-        const void *memb_ptr;
-        const char *mname;
-		size_t mlen;
+		void *memb_ptr;
+		const char *mname;
+		unsigned int mlen;
 
 		elm = &td->elements[t2m[edx].el_no];
 		mname = elm->name;
 		mlen = strlen(elm->name);
 
 		if(elm->flags & ATF_POINTER) {
-            memb_ptr =
-                *(const void *const *)((const char *)sptr + elm->memb_offset);
-            if(!memb_ptr) {
+			memb_ptr = *(void **)((char *)sptr + elm->memb_offset);
+			if(!memb_ptr) {
 				if(elm->optional)
 					continue;
 				/* Mandatory element missing */
 				ASN__ENCODE_FAILED;
 			}
 		} else {
-            memb_ptr = (const void *)((const char *)sptr + elm->memb_offset);
-        }
+			memb_ptr = (void *)((char *)sptr + elm->memb_offset);
+		}
 
 		if(!xcan)
 			ASN__TEXT_INDENT(1, ilevel);
@@ -886,9 +1055,10 @@ SET_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
 		tmper = elm->type->op->xer_encoder(elm->type, memb_ptr,
 				ilevel + 1, flags, cb, app_key);
 		if(tmper.encoded == -1) return tmper;
-		er.encoded += tmper.encoded;
 
 		ASN__CALLBACK3("</", 2, mname, mlen, ">", 1);
+
+		er.encoded += 5 + (2 * mlen) + tmper.encoded;
 	}
 
 	if(!xcan) ASN__TEXT_INDENT(1, ilevel - 1);
@@ -899,9 +1069,9 @@ cb_failed:
 }
 
 int
-SET_print(const asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
-          asn_app_consume_bytes_f *cb, void *app_key) {
-    size_t edx;
+SET_print(asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
+		asn_app_consume_bytes_f *cb, void *app_key) {
+	int edx;
 	int ret;
 
 	if(!sptr) return (cb("<absent>", 8, app_key) < 0) ? -1 : 0;
@@ -946,9 +1116,8 @@ SET_print(const asn_TYPE_descriptor_t *td, const void *sptr, int ilevel,
 }
 
 void
-SET_free(const asn_TYPE_descriptor_t *td, void *ptr,
-         enum asn_struct_free_method method) {
-    size_t edx;
+SET_free(asn_TYPE_descriptor_t *td, void *ptr, int contents_only) {
+	int edx;
 
 	if(!td || !ptr)
 		return;
@@ -968,23 +1137,17 @@ SET_free(const asn_TYPE_descriptor_t *td, void *ptr,
 		}
 	}
 
-    switch(method) {
-    case ASFM_FREE_EVERYTHING:
-        FREEMEM(ptr);
-        break;
-    case ASFM_FREE_UNDERLYING:
-        break;
-    case ASFM_FREE_UNDERLYING_AND_RESET:
-        memset(ptr, 0,
-               ((const asn_SET_specifics_t *)(td->specifics))->struct_size);
-        break;
-    }
+	if(!contents_only) {
+		FREEMEM(ptr);
+	} else if(td->specifics) {
+		memset(ptr, 0, ((asn_SET_specifics_t *)(td->specifics))->struct_size);
+	}
 }
 
 int
-SET_constraint(const asn_TYPE_descriptor_t *td, const void *sptr,
-               asn_app_constraint_failed_f *ctfailcb, void *app_key) {
-    size_t edx;
+SET_constraint(asn_TYPE_descriptor_t *td, const void *sptr,
+		asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	int edx;
 
 	if(!sptr) {
 		ASN__CTFAIL(app_key, td, sptr,
@@ -1014,134 +1177,43 @@ SET_constraint(const asn_TYPE_descriptor_t *td, const void *sptr,
 			memb_ptr = (const void *)((const char *)sptr + elm->memb_offset);
 		}
 
-		if(elm->encoding_constraints.general_constraints) {
-			return elm->encoding_constraints.general_constraints(
-					elm->type, memb_ptr, ctfailcb, app_key);
+		if(elm->memb_constraints) {
+			int ret = elm->memb_constraints(elm->type, memb_ptr,
+				ctfailcb, app_key);
+			if(ret) return ret;
 		} else {
-			return elm->type->encoding_constraints.general_constraints(
-					elm->type, memb_ptr, ctfailcb, app_key);
+			int ret = elm->type->check_constraints(elm->type,
+				memb_ptr, ctfailcb, app_key);
+			if(ret) return ret;
+			/*
+			 * Cannot inherit it earlier:
+			 * need to make sure we get the updated version.
+			 */
+			elm->memb_constraints = elm->type->op->check_constraints;
 		}
 	}
 
 	return 0;
 }
 
-int
-SET_compare(const asn_TYPE_descriptor_t *td, const void *aptr,
-            const void *bptr) {
-    size_t edx;
-
-	for(edx = 0; edx < td->elements_count; edx++) {
-		asn_TYPE_member_t *elm = &td->elements[edx];
-		const void *amemb;
-		const void *bmemb;
-		int ret;
-
-		if(elm->flags & ATF_POINTER) {
-            amemb =
-                *(const void *const *)((const char *)aptr + elm->memb_offset);
-            bmemb =
-                *(const void *const *)((const char *)bptr + elm->memb_offset);
-            if(!amemb) {
-                if(!bmemb) continue;
-                return -1;
-            } else if(!bmemb) {
-                return 1;
-            }
-		} else {
-            amemb = (const void *)((const char *)aptr + elm->memb_offset);
-            bmemb = (const void *)((const char *)bptr + elm->memb_offset);
-		}
-
-        ret = elm->type->op->compare_struct(elm->type, amemb, bmemb);
-        if(ret != 0) return ret;
-    }
-
-    return 0;
-}
-
-
 asn_TYPE_operation_t asn_OP_SET = {
 	SET_free,
 	SET_print,
-	SET_compare,
+	SET_constraint,
 	SET_decode_ber,
 	SET_encode_der,
 	SET_decode_xer,
 	SET_encode_xer,
-	0,	/* SET_decode_oer */
-	0,	/* SET_encode_oer */
+#ifdef ASN_DISABLE_PER_SUPPORT
 	0,	/* SET_decode_uper */
 	0,	/* SET_encode_uper */
-	SET_random_fill,
+	0,	/* SET_decode_aper */
+	0,	/* SET_encode_aper */
+#else
+	SET_decode_uper, /* SET_decode_uper */
+	SET_encode_uper, /* SET_encode_uper */
+	SET_decode_aper, /* SET_decode_aper */
+	SET_encode_aper, /* SET_encode_aper */
+#endif /* ASN_DISABLE_PER_SUPPORT */
 	0	/* Use generic outmost tag fetcher */
 };
-
-
-asn_random_fill_result_t
-SET_random_fill(const asn_TYPE_descriptor_t *td, void **sptr,
-                   const asn_encoding_constraints_t *constr,
-                   size_t max_length) {
-    const asn_SET_specifics_t *specs =
-        (const asn_SET_specifics_t *)td->specifics;
-    asn_random_fill_result_t result_ok = {ARFILL_OK, 0};
-    asn_random_fill_result_t result_failed = {ARFILL_FAILED, 0};
-    asn_random_fill_result_t result_skipped = {ARFILL_SKIPPED, 0};
-    void *st = *sptr;
-    size_t edx;
-
-    if(max_length == 0) return result_skipped;
-
-    (void)constr;
-
-    if(st == NULL) {
-        st = CALLOC(1, specs->struct_size);
-        if(st == NULL) {
-            return result_failed;
-        }
-    }
-
-    for(edx = 0; edx < td->elements_count; edx++) {
-        const asn_TYPE_member_t *elm = &td->elements[edx];
-        void *memb_ptr;   /* Pointer to the member */
-        void **memb_ptr2; /* Pointer to that pointer */
-        asn_random_fill_result_t tmpres;
-
-        if(elm->optional && asn_random_between(0, 4) == 2) {
-            /* Sometimes decide not to fill the optional value */
-            continue;
-        }
-
-        if(elm->flags & ATF_POINTER) {
-            /* Member is a pointer to another structure */
-            memb_ptr2 = (void **)((char *)st + elm->memb_offset);
-        } else {
-            memb_ptr = (char *)st + elm->memb_offset;
-            memb_ptr2 = &memb_ptr;
-        }
-
-        tmpres = elm->type->op->random_fill(
-            elm->type, memb_ptr2, &elm->encoding_constraints,
-            max_length > result_ok.length ? max_length - result_ok.length : 0);
-        switch(tmpres.code) {
-        case ARFILL_OK:
-            result_ok.length += tmpres.length;
-            continue;
-        case ARFILL_SKIPPED:
-            assert(!(elm->flags & ATF_POINTER) || *memb_ptr2 == NULL);
-            continue;
-        case ARFILL_FAILED:
-            if(st == *sptr) {
-                ASN_STRUCT_RESET(*td, st);
-            } else {
-                ASN_STRUCT_FREE(*td, st);
-            }
-            return tmpres;
-        }
-    }
-
-    *sptr = st;
-
-    return result_ok;
-}
-
