@@ -7,10 +7,10 @@ ifeq ($(OS),Windows_NT)
 	RM = del
 endif
 
-TARGET = decode.c
+TARGET = decode
 
 all:
-	$(CC) $(CFLAGS) -o $(TARGET).exe $(TARGET) ${OBJECTS} 
+	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).c ${OBJECTS} 
 
 library: 
 	$(MAKE) -C asn1c all
