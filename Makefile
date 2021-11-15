@@ -1,19 +1,22 @@
 CC =  gcc
 LIBS += -lm
 CFLAGS += -I. -I./asn1c
-OBJECTS = $(wildcard ./asn1c/*.o)
+LIB = s1ap.a
 
+TARGET=decode
 ifeq ($(OS),Windows_NT)
 	RM = del
 endif
 
-TARGET = decode
-
-all:
-	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).c ${OBJECTS} 
-
+all: library
+	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).c ${LIB} 
 library: 
 	$(MAKE) -C asn1c all
 
-
-
+clean:
+	$(MAKE) -C asn1c clean
+	ifeq ($(OS),Windows_NT)
+		$(RM) $(TARGET).exe
+	else
+		$(RM) $(TARGET)
+	endif
